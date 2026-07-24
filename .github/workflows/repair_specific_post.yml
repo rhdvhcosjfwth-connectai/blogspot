@@ -1,0 +1,17 @@
+name: Update Specific Government Post Image
+on:
+  workflow_dispatch:
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.10'}
+      - run: pip install google-api-python-client google-auth google-generativeai requests beautifulsoup4 pillow
+      - env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          BLOG_URL: ${{ secrets.BLOG_URL_4 }}
+          TOKEN_JSON_BASE64: ${{ secrets.TOKEN_JSON_BASE64_4 }}
+          CREDENTIALS_JSON_BASE64: ${{ secrets.CREDENTIALS_JSON_BASE64_4 }}
+        run: python repair_specific_post.py
