@@ -1,0 +1,63 @@
+name: Repair Existing Libme And Gov Posts
+on:
+  workflow_dispatch:
+jobs:
+  libme:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.10'}
+      - run: pip install google-api-python-client google-auth google-generativeai feedparser requests beautifulsoup4 pillow
+      - run: test -f publication_safety.py
+      - env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          BLOG_URL: ${{ secrets.BLOG_URL_3 }}
+          TOKEN_JSON_BASE64: ${{ secrets.TOKEN_JSON_BASE64_3 }}
+          CREDENTIALS_JSON_BASE64: ${{ secrets.CREDENTIALS_JSON_BASE64_3 }}
+          ASSET_REPO: b847994-a11y/blog-assets
+          ASSET_GITHUB_TOKEN: ${{ secrets.ASSET_GITHUB_TOKEN }}
+          BLOG_IMAGE_NAMESPACE: libme
+        run: python repair_existing_posts.py
+  gov:
+    needs: libme
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.10'}
+      - run: pip install google-api-python-client google-auth google-generativeai feedparser requests beautifulsoup4 pillow
+      - run: test -f publication_safety.py
+      - run: cp gov_bot.py libme_bot.py
+      - env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          BLOG_URL: ${{ secrets.BLOG_URL_4 }}
+          TOKEN_JSON_BASE64: ${{ secrets.TOKEN_JSON_BASE64_4 }}
+          CREDENTIALS_JSON_BASE64: ${{ secrets.CREDENTIALS_JSON_BASE64_4 }}
+          ASSET_REPO: b847994-a11y/blog-assets
+          ASSET_GITHUB_TOKEN: ${{ secrets.ASSET_GITHUB_TOKEN }}
+          BLOG_IMAGE_NAMESPACE: gov
+        run: python repair_existing_posts.py
+
+  welfare:
+    needs: gov
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.10'}
+      - run: pip install google-api-python-client google-auth google-generativeai feedparser requests beautifulsoup4 pillow
+      - run: test -f publication_safety.py
+      - run: cp welfare_bot.py libme_bot.py
+      - env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          BLOG_URL: ${{ secrets.BLOG_URL_2 }}
+          TOKEN_JSON_BASE64: ${{ secrets.TOKEN_JSON_BASE64_2 }}
+          CREDENTIALS_JSON_BASE64: ${{ secrets.CREDENTIALS_JSON_BASE64_2 }}
+          ASSET_REPO: b847994-a11y/blog-assets
+          ASSET_GITHUB_TOKEN: ${{ secrets.ASSET_GITHUB_TOKEN }}
+          BLOG_IMAGE_NAMESPACE: welfare
+        run: python repair_existing_posts.py
