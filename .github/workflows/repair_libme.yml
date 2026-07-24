@@ -1,0 +1,22 @@
+name: Repair Libme Posts
+on:
+  workflow_dispatch:
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+      - run: pip install google-api-python-client google-auth google-generativeai requests beautifulsoup4 pillow
+      - env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          BLOG_URL: ${{ secrets.BLOG_URL_3 }}
+          TOKEN_JSON_BASE64: ${{ secrets.TOKEN_JSON_BASE64_3 }}
+          CREDENTIALS_JSON_BASE64: ${{ secrets.CREDENTIALS_JSON_BASE64_3 }}
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          ASSET_REPO: b847994-a11y/blog-assets
+          ASSET_GITHUB_TOKEN: ${{ secrets.ASSET_GITHUB_TOKEN }}
+          BLOG_IMAGE_NAMESPACE: libme
+        run: python repair_existing_posts.py
