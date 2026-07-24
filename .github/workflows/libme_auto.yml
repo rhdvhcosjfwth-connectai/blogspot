@@ -1,0 +1,76 @@
+name: Libme LifeLog Blogspot Auto Publisher
+
+on:
+  workflow_dispatch:
+  repository_dispatch:
+    types: [trigger_libme_bot]
+
+concurrency:
+  group: libme-daily-publisher
+  cancel-in-progress: false
+
+jobs:
+  post_to_blogspot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: write
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: pip install google-api-python-client google-auth google-generativeai requests beautifulsoup4 pillow
+
+      - name: Create and schedule libme posts
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          BLOG_URL: ${{ secrets.BLOG_URL_3 }}
+          TOKEN_JSON_BASE64: ${{ secrets.TOKEN_JSON_BASE64_3 }}
+          CREDENTIALS_JSON_BASE64: ${{ secrets.CREDENTIALS_JSON_BASE64_3 }}
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          ASSET_REPO: b847994-a11y/blog-assets
+          ASSET_GITHUB_TOKEN: ${{ secrets.ASSET_GITHUB_TOKEN }}
+          BLOG_IMAGE_NAMESPACE: libme
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python libme_bot.py
+
+      - name: Trigger Bot 4 even when Bot 3 fails
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          http_status="$(curl --fail-with-body --silent --show-error \
+            --output dispatch-response.txt \
+            --write-out '%{http_code}' \
+            --request POST \
+            --header 'Accept: application/vnd.github+json' \
+            --header "Authorization: Bearer ${GH_TOKEN}" \
+            --header 'X-GitHub-Api-Version: 2022-11-28' \
+            --url "https://api.github.com/repos/${{ github.repository }}/dispatches" \
+            --data '{"event_type":"trigger_gov_bot"}')"
+          if [ "$http_status" != "204" ]; then
+            echo "Bot 4 dispatch failed with HTTP $http_status"
+            cat dispatch-response.txt || true
+            exit 1
+          fi
+          echo "Bot 4 dispatch accepted (HTTP 204)."
+
+      - name: Commit generated images
+        if: always()
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          mkdir -p images
+          touch images/.gitkeep
+          git add images/
+          git commit -m "Add generated images for blog posts [skip ci]" || echo "No changes to commit"
+          git push || echo "Push failed, skipping"
