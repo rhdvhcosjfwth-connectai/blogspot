@@ -1,0 +1,52 @@
+name: 블로그스팟 자동 글쓰기 봇
+
+on:
+  workflow_dispatch:   # 수동으로도 실행 가능
+  schedule:
+    # 매일 한국시간 오전 7시에 자동 실행 (UTC 기준 22:00 = KST 07:00)
+    # → 이때 10개 글의 랜덤 예약 시간을 뽑아서 예약발행 등록!
+    - cron: '0 22 * * *'
+
+jobs:
+  post_to_blogspot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60   # 예약 등록만 하면 15분이면 끝!
+    permissions:
+      contents: write
+
+    steps:
+      - name: 📥 코드 가져오기
+        uses: actions/checkout@v3
+
+      - name: 🐍 파이썬 설치
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: 📦 필요한 패키지 설치
+        run: pip install google-api-python-client google-auth google-generativeai feedparser requests beautifulsoup4 pillow
+
+      - name: 🚀 블로그스팟 IT AI 자동 글쓰기 봇 실행 (7개 - 2026.05.27 변경)
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          BLOG_URL: ${{ secrets.BLOG_URL }}
+          TOKEN_JSON_BASE64: ${{ secrets.TOKEN_JSON_BASE64 }}
+          CREDENTIALS_JSON_BASE64: ${{ secrets.CREDENTIALS_JSON_BASE64 }}
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          ASSET_REPO: b847994-a11y/blog-assets
+          ASSET_GITHUB_TOKEN: ${{ secrets.ASSET_GITHUB_TOKEN }}
+          BLOG_IMAGE_NAMESPACE: it
+          POSTS_PER_RUN: 7
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python github_bot.py
+
+      - name: ⚙️ 생성된 이미지 깃허브에 커밋 및 푸시
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          mkdir -p images
+          touch images/.gitkeep
+          git add images/
+          git commit -m "Add generated images for blog posts [skip ci]" || echo "No changes to commit"
+          git push || echo "Push failed, skipping"
