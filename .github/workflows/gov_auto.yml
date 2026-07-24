@@ -1,0 +1,55 @@
+name: GovInfo Blogspot Auto Publisher
+
+on:
+  workflow_dispatch:
+  repository_dispatch:
+    types: [trigger_gov_bot]
+
+concurrency:
+  group: govinfo-daily-publisher
+  cancel-in-progress: false
+
+jobs:
+  post_to_blogspot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: write
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: pip install google-api-python-client google-auth google-generativeai requests beautifulsoup4 pillow
+
+      - name: Create and schedule gov posts
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          BLOG_URL: ${{ secrets.BLOG_URL_4 }}
+          TOKEN_JSON_BASE64: ${{ secrets.TOKEN_JSON_BASE64_4 }}
+          CREDENTIALS_JSON_BASE64: ${{ secrets.CREDENTIALS_JSON_BASE64_4 }}
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          ASSET_REPO: b847994-a11y/blog-assets
+          ASSET_GITHUB_TOKEN: ${{ secrets.ASSET_GITHUB_TOKEN }}
+          BLOG_IMAGE_NAMESPACE: gov
+          POSTS_PER_RUN: 7
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python gov_bot.py
+
+      - name: Commit generated images
+        if: always()
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          mkdir -p images
+          touch images/.gitkeep
+          git add images/ gg24_published_titles.json
+          git commit -m "Save generated images and gg24 publish history [skip ci]" || echo "No changes to commit"
+          git push || echo "Push failed, skipping"
