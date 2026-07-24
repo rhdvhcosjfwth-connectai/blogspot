@@ -1,0 +1,78 @@
+name: 🩹 깨진 이미지 자동 복구 (봇1-4 전체)
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 18 * * *'   # UTC 18:00 = KST 03:00
+
+jobs:
+  repair_images:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: 📥 코드 체크아웃
+        uses: actions/checkout@v3
+
+      - name: 🐍 Python 환경 설정
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: 📦 패키지 설치
+        run: |
+          pip install google-api-python-client google-auth google-auth-oauthlib \
+                      google-generativeai requests pillow feedparser beautifulsoup4 lxml
+
+      - name: 🩹 깨진 이미지 복구 실행 (봇1)
+        env:
+          ASSET_GITHUB_TOKEN:  ${{ secrets.ASSET_GITHUB_TOKEN }}
+          ASSET_REPO:          b847994-a11y/blog-assets
+          BLOG_URL:            ${{ secrets.BLOG_URL }}
+          TOKEN_JSON_BASE64:   ${{ secrets.TOKEN_JSON_BASE64 }}
+          BLOG_NAMESPACE:      it
+          BLOG_THEME:          artificial intelligence, robot technology, software, digital innovation
+          GEMINI_API_KEY:      ${{ secrets.GEMINI_API_KEY }}
+        run: python repair_images_all.py
+
+      - name: ⏳ 봇1→봇2 대기 (서버 부하 방지)
+        run: sleep 30
+
+      - name: 🩹 깨진 이미지 복구 실행 (봇2)
+        env:
+          ASSET_GITHUB_TOKEN:  ${{ secrets.ASSET_GITHUB_TOKEN }}
+          ASSET_REPO:          b847994-a11y/blog-assets
+          BLOG_URL:            ${{ secrets.BLOG_URL_2 }}
+          TOKEN_JSON_BASE64:   ${{ secrets.TOKEN_JSON_BASE64_2 }}
+          BLOG_NAMESPACE:      welfare
+          BLOG_THEME:          Korean welfare policy, government support, social service
+          GEMINI_API_KEY:      ${{ secrets.GEMINI_API_KEY }}
+        run: python repair_images_all.py
+
+      - name: ⏳ 봇2→봇3 대기
+        run: sleep 30
+
+      - name: 🩹 깨진 이미지 복구 실행 (봇3)
+        env:
+          ASSET_GITHUB_TOKEN:  ${{ secrets.ASSET_GITHUB_TOKEN }}
+          ASSET_REPO:          b847994-a11y/blog-assets
+          BLOG_URL:            ${{ secrets.BLOG_URL_3 }}
+          TOKEN_JSON_BASE64:   ${{ secrets.TOKEN_JSON_BASE64_3 }}
+          BLOG_NAMESPACE:      libme
+          BLOG_THEME:          Korean lifestyle, daily life, convenience store products, food review
+          GEMINI_API_KEY:      ${{ secrets.GEMINI_API_KEY }}
+        run: python repair_images_all.py
+
+      - name: ⏳ 봇3→봇4 대기
+        run: sleep 30
+
+      - name: 🩹 깨진 이미지 복구 실행 (봇4)
+        env:
+          ASSET_GITHUB_TOKEN:  ${{ secrets.ASSET_GITHUB_TOKEN }}
+          ASSET_REPO:          b847994-a11y/blog-assets
+          BLOG_URL:            ${{ secrets.BLOG_URL_4 }}
+          TOKEN_JSON_BASE64:   ${{ secrets.TOKEN_JSON_BASE64_4 }}
+          BLOG_NAMESPACE:      gov
+          BLOG_THEME:          Korean government subsidy, public service, citizen support policy
+          GEMINI_API_KEY:      ${{ secrets.GEMINI_API_KEY }}
+        run: python repair_images_all.py
